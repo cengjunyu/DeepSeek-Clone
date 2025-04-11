@@ -7,7 +7,9 @@
 html {
   @apply scroll-smooth;
 }
-
-::-webkit-scrollbar{
+body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+::-webkit-scrollbar {
   display: none;
 }
