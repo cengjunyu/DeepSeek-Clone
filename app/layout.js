@@ -25,18 +25,16 @@ export default function RootLayout({ children }) {
   );
 }
  */
-import { Inter } from "next/font/google";
+import { Inter } from "next/font/google"; // 注意这里从 'next/font/google' 导入
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AppContextProvider } from "@/context/AppContext";
 
-// 更可靠的字体加载配置
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap", // 确保字体显示不会阻塞渲染
-  weight: ["400", "500", "600", "700"], // 明确指定需要的字重
+  display: "swap",
   variable: "--font-inter",
-  adjustFontFallback: false, // 禁用自动回退字体
+  // 不再需要 weight 数组，除非你需要特定字重
 });
 
 export const metadata = {
@@ -49,7 +47,9 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <AppContextProvider>
         <html lang="en" className={inter.variable}>
-          <body className={`font-sans antialiased`}>{children}</body>
+          <body className="antialiased">
+            {children}
+          </body>
         </html>
       </AppContextProvider>
     </ClerkProvider>

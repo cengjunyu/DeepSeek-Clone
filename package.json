@@ -10,10 +10,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.14.3",
-    "@next/font": "^14.2.15",
     "axios": "^1.8.4",
     "mongoose": "^8.13.2",
-    "next": "15.2.5",
+    "next": "^15.3.0",
     "openai": "^4.93.0",
     "prismjs": "^1.30.0",
     "react": "^19.0.0",
