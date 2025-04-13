@@ -2,7 +2,6 @@
 
 // 导入依赖
 import { assets } from "@/assets/assets"; // 静态资源（图标/图片等）
-import Message from "@/components/Message";
 import PromptBox from "@/components/PromptBox"; // 底部输入框组件
 import Sidebar from "@/components/Sidebar"; // 左侧边栏组件
 import Image from "next/image"; // Next.js优化图片组件
@@ -54,8 +53,6 @@ export default function Home() {
             </>
           ) : (
             <div>
-              <Message role="user" content="Hello!" />
-              <Message role="ai" content="Hello! What can i help you?" />
             </div> // 预留消息列表位置
           )}
 
