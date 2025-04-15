@@ -16,7 +16,7 @@ const Sidebar = ({ expand, setExpand }) => {
         expand ? "p-4 w-64" : "md:w-20 w-0 max-md:overflow-hidden"
       }`}
     >
-      <div>
+      <div className="flex flex-col h-full">
         <div
           className={`flex ${
             expand ? "flex-row gap-10" : "flex-col items-center gap-8"
@@ -89,15 +89,17 @@ const Sidebar = ({ expand, setExpand }) => {
           }`}
         >
           <p className="my-1">Recents</p>
-          {chats.map((chat) => (
-            <ChatLabel
-              key={chat._id}
-              openMenu={openMenu}
-              setOpenMenu={setOpenMenu}
-              name={chat.name}
-              id={chat._id}
-            />
-          ))}
+          <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-1 custom-scrollbar">
+            {chats.map((chat) => (
+              <ChatLabel
+                key={chat._id}
+                openMenu={openMenu}
+                setOpenMenu={setOpenMenu}
+                name={chat.name}
+                id={chat._id}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
