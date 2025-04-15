@@ -96,7 +96,6 @@ const Sidebar = ({ expand, setExpand }) => {
               setOpenMenu={setOpenMenu}
               name={chat.name}
               id={chat._id}
-              
             />
           ))}
         </div>

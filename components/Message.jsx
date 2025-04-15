@@ -1,20 +1,41 @@
 import { assets } from "@/assets/assets";
 import Image from "next/image";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Markdown from "react-markdown";
 import toast from "react-hot-toast";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import {
-  atomDark,
-  vscDarkPlus,
-  vsDark,
-} from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { atomDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
+
+// 加载动画组件
+const LoadingDots = () => {
+  const [dots, setDots] = useState("");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots((prev) => {
+        if (prev.length >= 3) return "";
+        return prev + ".";
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center">
+      <span className="text-white/70">思考中{dots}</span>
+    </div>
+  );
+};
 
 const Message = ({ role, content }) => {
   const copyMessage = () => {
     navigator.clipboard.writeText(content);
     toast.success("Message copied to clipboard");
   };
+
+  // 检查content是否为空
+  const isEmpty = !content || content.trim() === "";
 
   return (
     <div className="flex flex-col items-center w-full max-w-3xl text-sm">
@@ -89,29 +110,33 @@ const Message = ({ role, content }) => {
               border-white/15 rounded-full"
               />
               <div className="space-y-4 w-full overflow-scroll">
-                <Markdown
-                  components={{
-                    code(props) {
-                      const { children, className, node, ...rest } = props;
-                      const match = /language-(\w+)/.exec(className || "");
-                      return match ? (
-                        <SyntaxHighlighter
-                          {...rest}
-                          PreTag="div"
-                          children={String(children).replace(/\n$/, "")}
-                          language={match[1]}
-                          style={atomDark}
-                        />
-                      ) : (
-                        <code {...rest} className={className}>
-                          {children}
-                        </code>
-                      );
-                    },
-                  }}
-                >
-                  {content}
-                </Markdown>
+                {isEmpty ? (
+                  <LoadingDots />
+                ) : (
+                  <Markdown
+                    components={{
+                      code(props) {
+                        const { children, className, node, ...rest } = props;
+                        const match = /language-(\w+)/.exec(className || "");
+                        return match ? (
+                          <SyntaxHighlighter
+                            {...rest}
+                            PreTag="div"
+                            children={String(children).replace(/\n$/, "")}
+                            language={match[1]}
+                            style={atomDark}
+                          />
+                        ) : (
+                          <code {...rest} className={className}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {content}
+                  </Markdown>
+                )}
               </div>
             </>
           )}
