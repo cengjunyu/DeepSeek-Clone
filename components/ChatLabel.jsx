@@ -2,11 +2,13 @@ import { assets } from "@/assets/assets";
 import { useAppContext } from "@/context/AppContext";
 import axios from "axios";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 import toast from "react-hot-toast";
 
 const ChatLabel = ({ openMenu, setOpenMenu, id }) => {
-  const { chats, fetchUsersChats, setSelectedChat } = useAppContext();
+  const { chats, fetchUsersChats, selectedChat, setSelectedChat, setChats } = useAppContext();
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const selectChat = () => {
     const chatData = chats.find((chat) => chat._id === id);
     if (chatData) {
@@ -39,18 +41,35 @@ const ChatLabel = ({ openMenu, setOpenMenu, id }) => {
         "Are you sure you want to delete this chat?"
       );
       if (!confirm) return;
+
+      setIsDeleting(true);
+      setOpenMenu({ id: 0, open: false });
+
+      // 立即更新本地状态
+      setChats((prevChats) => prevChats.filter((chat) => chat._id !== id));
+      
+      // 如果删除的是当前选中的聊天，清除选中状态
+      if (selectedChat?._id === id) {
+        setSelectedChat(null);
+      }
+
       const { data } = await axios.delete("/api/chat/delete", {
         data: { chatId: id },
       });
+
       if (data.success) {
-        fetchUsersChats();
-        setOpenMenu({ id: 0, open: false });
         toast.success(data.message);
       } else {
+        // 如果删除失败，恢复本地状态
+        fetchUsersChats();
         toast.error(data.message);
       }
     } catch (error) {
+      // 如果发生错误，恢复本地状态
+      fetchUsersChats();
       toast.error(error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -98,9 +117,9 @@ const ChatLabel = ({ openMenu, setOpenMenu, id }) => {
               onClick={handleDelete}
               src={assets.delete_icon}
               alt=""
-              className="w-4"
+              className={`w-4 ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
-            <p>Delete</p>
+            <p className={isDeleting ? 'opacity-50' : ''}>Delete</p>
           </div>
         </div>
       </div>

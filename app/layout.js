@@ -1,6 +1,5 @@
 import { Inter } from "next/font/google"; // 注意这里从 'next/font/google' 导入
 import "./globals.css";
-import "./prism.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AppContextProvider } from "@/context/AppContext";
 import { Toaster } from "react-hot-toast";

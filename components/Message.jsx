@@ -1,15 +1,16 @@
 import { assets } from "@/assets/assets";
 import Image from "next/image";
-import React, { useEffect } from "react";
+import React from "react";
 import Markdown from "react-markdown";
-import Prism from "prismjs";
 import toast from "react-hot-toast";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  atomDark,
+  vscDarkPlus,
+  vsDark,
+} from "react-syntax-highlighter/dist/cjs/styles/prism";
 
 const Message = ({ role, content }) => {
-  useEffect(() => {
-    Prism.highlightAll();
-  }, [content]);
-
   const copyMessage = () => {
     navigator.clipboard.writeText(content);
     toast.success("Message copied to clipboard");
@@ -88,7 +89,29 @@ const Message = ({ role, content }) => {
               border-white/15 rounded-full"
               />
               <div className="space-y-4 w-full overflow-scroll">
-                <Markdown>{content}</Markdown>
+                <Markdown
+                  components={{
+                    code(props) {
+                      const { children, className, node, ...rest } = props;
+                      const match = /language-(\w+)/.exec(className || "");
+                      return match ? (
+                        <SyntaxHighlighter
+                          {...rest}
+                          PreTag="div"
+                          children={String(children).replace(/\n$/, "")}
+                          language={match[1]}
+                          style={atomDark}
+                        />
+                      ) : (
+                        <code {...rest} className={className}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {content}
+                </Markdown>
               </div>
             </>
           )}

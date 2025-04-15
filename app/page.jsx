@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react"; // React状态管理库
 export default function Home() {
   // 状态定义：
   const [expand, setExpand] = useState(false); // 控制侧边栏展开/折叠状态
-  const [messages, setMessages] = useState([1]); // 存储聊天消息数组
+  const [messages, setMessages] = useState([]); // 存储聊天消息数组
   const [isLoading, setIsLoading] = useState(false); // 请求加载状态标识
   const { selectedChat } = useAppContext();
 
@@ -84,12 +84,15 @@ export default function Home() {
             max-h-screen overflow-y-auto"
               ref={containerRef}
             >
-              <p
-                className="fixed top-8 border border-transparent hover:border-gray-500/50
-              py-1 px-2 rounded-lg font-semibold mb-6"
-              >
-                {selectedChat.name}
-              </p>
+              {/* 添加条件渲染，仅在 selectedChat 存在时显示名称 */}
+              {selectedChat && (
+                <p
+                  className="fixed top-8 border border-transparent hover:border-gray-500/50
+                py-1 px-2 rounded-lg font-semibold mb-6"
+                >
+                  {selectedChat.name}
+                </p>
+              )}
               {messages.map((message, index) => (
                 <Message
                   key={index}
@@ -97,8 +100,8 @@ export default function Home() {
                   content={message.content}
                 />
               ))}
-              {isLoading && (
-                <div className="flex gap-4 max-w-2xl w-full py-3">
+              {/* {isLoading && (
+                <div className="flex gap-4 max-w-3xl w-full py-3">
                   <Image
                     className="h-9 w-9 p-1 border border-white/15 rounded-full"
                     src={assets.logo_icon}
@@ -110,7 +113,7 @@ export default function Home() {
                     <div className="w-1 h-1 rounded-full bg-white animate-bounce"></div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div> // 预留消息列表位置
           )}
 

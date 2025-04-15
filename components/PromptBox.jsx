@@ -1,15 +1,12 @@
 import { assets } from "@/assets/assets";
 import { useAppContext } from "@/context/AppContext";
-import axios from "axios";
 import Image from "next/image";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 
 const PromptBox = ({ isLoading, setIsLoading }) => {
   const [prompt, setPrompt] = useState("");
-
-  const { user, chats, setChats, selectedChat, setSelectedChat } =
-    useAppContext();
+  const { user, setChats, selectedChat, setSelectedChat } = useAppContext();
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -20,88 +17,121 @@ const PromptBox = ({ isLoading, setIsLoading }) => {
 
   const sendPrompt = async (e) => {
     const promptCopy = prompt;
-
+    
     try {
       e.preventDefault();
       if (!user) return toast.error("Login to send a message");
-      if (isLoading)
-        return toast.error("Wait for the previous prompt to respond");
+      if (isLoading) return toast.error("Wait for the previous prompt to respond");
 
       setIsLoading(true);
-
       setPrompt("");
 
+      // 创建用户消息对象
       const userPrompt = {
         role: "user",
         content: prompt,
         timestamp: Date.now(),
       };
 
-      setChats((prevChats) =>
-        prevChats.map((chat) =>
-          chat._id === selectedChat._id
-            ? { ...chat, messages: [...chat.messages, userPrompt] }
+      // 立即更新本地消息列表
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat._id === selectedChat._id 
+            ? { ...chat, messages: [...chat.messages, userPrompt] } 
             : chat
         )
       );
-
-      console.log(chats);
-
-      setSelectedChat((prev) => ({
+      
+      setSelectedChat(prev => ({
         ...prev,
         messages: [...prev.messages, userPrompt],
       }));
 
-      console.log(selectedChat);
+      // 创建初始AI消息对象
+      const initialAiMessage = {
+        role: "assistant",
+        content: "",
+        timestamp: Date.now(),
+      };
 
-      const { data } = await axios.post("/api/chat/ai", {
-        chatId: selectedChat._id,
-        prompt: promptCopy,
+      // 添加空AI消息到列表
+      setSelectedChat(prev => ({
+        ...prev,
+        messages: [...prev.messages, initialAiMessage],
+      }));
+
+      // 发送流式请求
+      const response = await fetch("/api/chat/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: selectedChat._id,
+          prompt: promptCopy
+        })
       });
 
-      console.log(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (data.success) {
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat._id === selectedChat._id
-              ? { ...chat, messages: [...chat.messages, data.data] }
-              : chat
-          )
-        );
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = "";
 
-        const message = data.data.content;
-        const messageTokens = message.split(" ");
-        let assistantMessage = {
-          role: "assistant",
-          content: "",
-          timestamp: Date.now(),
-        };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        setSelectedChat((prev) => ({
-          ...prev,
-          messages: [...prev.messages, assistantMessage],
-        }));
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
 
-        for (let i = 0; i < messageTokens.length; i++) {
-          setTimeout(() => {
-            assistantMessage.content = messageTokens.slice(0, i + 1).join(" ");
-            setSelectedChat((prev) => {
-              const updatedMessages = [
-                ...prev.messages.slice(0, -1),
-                assistantMessage,
-              ];
-              return { ...prev, messages: updatedMessages };
-            });
-          }, i * 100);
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6);
+            
+            if (dataStr === "[DONE]") {
+              // 流式结束，更新最终消息到聊天列表
+              setChats(prevChats => 
+                prevChats.map(chat => 
+                  chat._id === selectedChat._id 
+                    ? {
+                        ...chat,
+                        messages: chat.messages.map((msg, idx) => 
+                          idx === chat.messages.length - 1 
+                            ? { ...msg, content: fullResponse } 
+                            : msg
+                        )
+                      } 
+                    : chat
+                )
+              );
+            } else {
+              try {
+                const { content, error } = JSON.parse(dataStr);
+                if (error) throw new Error(error);
+                
+                if (content) {
+                  fullResponse += content;
+                  // 实时更新最后一条消息内容
+                  setSelectedChat(prev => {
+                    const newMessages = [...prev.messages];
+                    const lastIndex = newMessages.length - 1;
+                    newMessages[lastIndex] = { 
+                      ...newMessages[lastIndex], 
+                      content: fullResponse 
+                    };
+                    return { ...prev, messages: newMessages };
+                  });
+                }
+              } catch (e) {
+                console.error("Error parsing SSE data:", e);
+              }
+            }
+          }
         }
-      } else {
-        console.log(data.message);
-        toast.error(data.message);
-        setPrompt(promptCopy);
       }
     } catch (error) {
-      console.log(error.message);
+      console.error("Error:", error);
       toast.error(error.message);
       setPrompt(promptCopy);
     } finally {
@@ -127,12 +157,9 @@ const PromptBox = ({ isLoading, setIsLoading }) => {
       />
 
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2 ">
+        <div className="flex items-center gap-2">
           <div className="relative group">
-            <p
-              className="flex items-center gap-2 text-xs border border-gray-300/40
-          px-2 py-1 rounded-full cursor-pointer hover:bg-gray-500/20"
-            >
+            <p className="flex items-center gap-2 text-xs border border-gray-300/40 px-2 py-1 rounded-full cursor-pointer hover:bg-gray-500/20">
               <Image className="h-5" src={assets.deepthink_icon} alt="" />
               DeepThink (R1)
             </p>
@@ -143,10 +170,7 @@ const PromptBox = ({ isLoading, setIsLoading }) => {
           </div>
 
           <div className="relative group">
-            <p
-              className="flex items-center gap-2 text-xs border border-gray-300/40
-          px-2 py-1 rounded-full cursor-pointer hover:bg-gray-500/20"
-            >
+            <p className="flex items-center gap-2 text-xs border border-gray-300/40 px-2 py-1 rounded-full cursor-pointer hover:bg-gray-500/20">
               <Image className="h-5" src={assets.search_icon} alt="" />
               Search
             </p>
@@ -159,8 +183,8 @@ const PromptBox = ({ isLoading, setIsLoading }) => {
 
         <div className="flex items-center gap-2">
           <Image className="w-4 cursor-pointer" src={assets.pin_icon} alt="" />
-
           <button
+            type="submit"
             className={`${
               prompt ? "bg-primary" : "bg-[#71717a]"
             } rounded-full p-2 cursor-pointer`}
